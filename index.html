@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stream Player</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>CriaPlayer</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -12,9 +12,18 @@
 html, body { 
   width: 100%; height: 100%; 
   background: #000; 
-  font-family: 'Inter', system-ui, sans-serif; 
+  font-family: 'Inter', system-ui, -apple-system, sans-serif; 
   color: #fff; 
-  overflow: hidden; 
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --accent: #9b59b6;
+  --accent-light: #b87fd3;
+  --glass-bg: rgba(28, 28, 30, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 40px;
 }
 
 /* Loader */
@@ -27,13 +36,13 @@ html, body {
   position: absolute; inset: 0;
   background-size: cover; background-position: center;
   transition: opacity .6s ease; opacity: 0;
-  filter: blur(20px) brightness(0.4);
+  filter: blur(30px) brightness(0.3);
 }
 .spinner {
   position: relative; z-index: 1;
-  width: 56px; height: 56px;
+  width: 48px; height: 48px;
   border: 3px solid rgba(255,255,255,.1);
-  border-top-color: rgba(255,255,255,0.8); 
+  border-top-color: var(--accent); 
   border-radius: 50%;
   animation: spin .8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -42,7 +51,7 @@ html, body {
   position: relative; z-index: 1; 
   font-size: .875rem; 
   color: rgba(255,255,255,.5); 
-  letter-spacing: .05em; 
+  letter-spacing: .02em; 
   font-weight: 500;
 }
 
@@ -52,138 +61,147 @@ html, body {
   display: none; 
   background: #000; 
 }
-
 #player video { 
   width: 100%; height: 100%; 
   display: block; 
   object-fit: contain;
 }
 
-/* Custom Controls - Liquid Glass Effect */
+/* Logo - Top Left */
+.player-logo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  z-index: 15;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.player-logo svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--accent);
+}
+#player:hover .player-logo,
+#player.show-controls .player-logo {
+  opacity: 1;
+}
+
+/* Controls Wrapper - Bottom */
 .controls-wrapper {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 80px 24px 24px;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%);
+  padding: 0 20px 20px;
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0.3) 70%, transparent 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 10;
 }
-
 #player:hover .controls-wrapper,
 #player.show-controls .controls-wrapper {
   opacity: 1;
 }
 
-/* Top Bar - Title & Info */
-.top-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 24px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+/* Title Row */
+.title-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 10;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding-top: 60px;
 }
-
-#player:hover .top-bar,
-#player.show-controls .top-bar {
-  opacity: 1;
+.title-poster {
+  width: 36px;
+  height: 52px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
 }
-
-.media-title {
-  font-size: 1.25rem;
+.title-info h1 {
+  font-size: 1.125rem;
   font-weight: 600;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  line-height: 1.3;
+  margin-bottom: 2px;
 }
-
-.media-info {
-  font-size: 0.875rem;
-  color: rgba(255,255,255,0.6);
-  margin-top: 4px;
+.title-info span {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
 }
 
 /* Progress Bar */
 .progress-container {
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 6px 0;
 }
-
 .progress-bar {
   position: relative;
   width: 100%;
   height: 4px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.25);
   border-radius: 4px;
   overflow: visible;
   transition: height 0.15s ease;
 }
-
 .progress-container:hover .progress-bar {
   height: 6px;
 }
-
 .progress-buffered {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 0; top: 0;
   height: 100%;
-  background: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.35);
   border-radius: 4px;
-  transition: width 0.1s ease;
 }
-
 .progress-current {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 0; top: 0;
   height: 100%;
-  background: #e50914;
+  background: var(--accent);
   border-radius: 4px;
-  transition: width 0.05s ease;
 }
-
 .progress-handle {
   position: absolute;
   top: 50%;
-  width: 16px;
-  height: 16px;
-  background: #e50914;
+  width: 14px;
+  height: 14px;
+  background: #fff;
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0);
   transition: transform 0.15s ease;
-  box-shadow: 0 2px 8px rgba(229,9,20,0.5);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
-
 .progress-container:hover .progress-handle {
   transform: translate(-50%, -50%) scale(1);
 }
-
-/* Hover Preview */
 .progress-preview {
   position: absolute;
   bottom: 20px;
   transform: translateX(-50%);
   background: rgba(0,0,0,0.9);
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
-  backdrop-filter: blur(10px);
 }
-
 .progress-container:hover .progress-preview {
   opacity: 1;
 }
@@ -193,146 +211,77 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
 }
-
-.controls-left,
-.controls-center,
-.controls-right {
+.controls-left, .controls-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.controls-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* Liquid Glass Buttons */
+/* Control Buttons */
 .ctrl-btn {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   color: #fff;
 }
-
 .ctrl-btn:hover {
-  background: rgba(255,255,255,0.2);
-  border-color: rgba(255,255,255,0.3);
-  transform: scale(1.05);
+  background: rgba(255,255,255,0.1);
 }
-
 .ctrl-btn:active {
   transform: scale(0.95);
 }
-
 .ctrl-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   fill: currentColor;
 }
 
-/* Play/Pause Button - Larger */
-.ctrl-btn.play-pause {
-  width: 56px;
-  height: 56px;
-  background: rgba(255,255,255,0.15);
-}
-
-.ctrl-btn.play-pause svg {
-  width: 28px;
-  height: 28px;
-}
-
-/* Skip Buttons */
-.ctrl-btn.skip {
-  position: relative;
-}
-
-.ctrl-btn.skip .skip-text {
-  position: absolute;
-  font-size: 10px;
-  font-weight: 600;
-  bottom: 8px;
-}
-
-/* Volume Control */
+/* Volume Container */
 .volume-container {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
-
 .volume-slider-wrapper {
   width: 0;
   overflow: hidden;
   transition: width 0.2s ease;
 }
-
 .volume-container:hover .volume-slider-wrapper {
-  width: 80px;
+  width: 70px;
 }
-
 .volume-slider {
-  width: 80px;
+  width: 70px;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.25);
   border-radius: 4px;
   cursor: pointer;
+  margin-left: 4px;
 }
-
 .volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background: #fff;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
 .volume-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background: #fff;
   border-radius: 50%;
   cursor: pointer;
   border: none;
-}
-
-/* Volume Boost Indicator */
-.volume-boost-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: #e50914;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 5px;
-  border-radius: 8px;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.2s ease;
-}
-
-.volume-boost-badge.active {
-  opacity: 1;
-  transform: scale(1);
 }
 
 /* Time Display */
@@ -341,160 +290,78 @@ html, body {
   font-weight: 500;
   color: rgba(255,255,255,0.9);
   font-variant-numeric: tabular-nums;
-  min-width: 100px;
-}
-
-/* Settings Panel - Liquid Glass */
-.settings-panel {
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 12px;
-  background: rgba(20,20,20,0.85);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
-  padding: 8px;
-  min-width: 200px;
-  opacity: 0;
-  transform: translateY(10px);
-  pointer-events: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-}
-
-.settings-panel.active {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.settings-item {
+  margin-left: 8px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background 0.15s ease;
+  gap: 6px;
 }
-
-.settings-item:hover {
-  background: rgba(255,255,255,0.1);
-}
-
-.settings-item-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.settings-item-label svg {
-  width: 18px;
-  height: 18px;
-  opacity: 0.7;
-}
-
-.settings-item-value {
-  font-size: 0.8125rem;
+.time-display .remaining {
   color: rgba(255,255,255,0.5);
 }
 
-/* Subtitles Panel */
-.subtitles-panel {
+/* Central Controls */
+.center-controls {
   position: absolute;
-  bottom: 100%;
-  right: 60px;
-  margin-bottom: 12px;
-  background: rgba(20,20,20,0.85);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
-  padding: 8px;
-  min-width: 180px;
-  opacity: 0;
-  transform: translateY(10px);
-  pointer-events: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-}
-
-.subtitles-panel.active {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.subtitle-option {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background 0.15s ease;
-}
-
-.subtitle-option:hover {
-  background: rgba(255,255,255,0.1);
-}
-
-.subtitle-option.active {
-  color: #e50914;
-}
-
-.subtitle-option .check {
-  width: 16px;
-  height: 16px;
+  gap: 24px;
+  z-index: 8;
   opacity: 0;
+  transition: opacity 0.3s ease;
 }
-
-.subtitle-option.active .check {
+#player:hover .center-controls,
+#player.show-controls .center-controls,
+#player.paused .center-controls {
   opacity: 1;
 }
-
-/* Center Play Overlay */
-.center-play-overlay {
-  position: absolute;
-  inset: 0;
+.center-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  z-index: 5;
-}
-
-.center-play-btn {
-  width: 80px;
-  height: 80px;
-  background: rgba(0,0,0,0.6);
+  background: rgba(80, 80, 80, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 2px solid rgba(255,255,255,0.2);
+  border: none;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #fff;
 }
-
-#player.paused .center-play-btn {
-  opacity: 1;
-  transform: scale(1);
+.center-btn:hover {
+  background: rgba(100, 100, 100, 0.8);
+  transform: scale(1.05);
 }
-
-.center-play-btn svg {
-  width: 36px;
-  height: 36px;
-  fill: #fff;
-  margin-left: 4px;
+.center-btn:active {
+  transform: scale(0.95);
+}
+.center-btn.play-main {
+  width: 72px;
+  height: 72px;
+}
+.center-btn.play-main svg {
+  width: 32px;
+  height: 32px;
+  fill: currentColor;
+  margin-left: 3px;
+}
+.center-btn.skip-btn {
+  width: 56px;
+  height: 56px;
+  position: relative;
+}
+.center-btn.skip-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.center-btn.skip-btn .skip-num {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+  bottom: 12px;
+  right: 12px;
 }
 
 /* Skip Feedback Animation */
@@ -505,195 +372,248 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
 }
-
-.skip-feedback.left { left: 15%; }
-.skip-feedback.right { right: 15%; }
-
+.skip-feedback.left { left: 18%; }
+.skip-feedback.right { right: 18%; }
 .skip-feedback.show {
-  animation: skipFeedback 0.8s ease forwards;
+  animation: skipPulse 0.7s ease forwards;
 }
-
-@keyframes skipFeedback {
+@keyframes skipPulse {
   0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
   20% { opacity: 1; transform: translateY(-50%) scale(1); }
   80% { opacity: 1; }
   100% { opacity: 0; transform: translateY(-50%) scale(1.1); }
 }
-
 .skip-feedback svg {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   fill: rgba(255,255,255,0.9);
 }
-
 .skip-feedback span {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255,255,255,0.9);
 }
 
-/* Usage Screen */
-#usage {
-  position: fixed; inset: 0; display: none; flex-direction: column;
-  align-items: center; justify-content: center; text-align: center;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-  gap: 20px;
-  padding: 24px;
+/* Settings Panel - Liquid Glass */
+.panel-container {
+  position: absolute;
+  bottom: 70px;
+  right: 20px;
+  width: 280px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 20;
+  max-height: 400px;
+}
+.panel-container.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
-.usage-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Panel Views */
+.panel-views {
+  position: relative;
+  width: 100%;
+}
+.panel-view {
+  width: 100%;
+  padding: 8px 0;
+  display: none;
+  animation: fadeSlideIn 0.25s ease forwards;
+}
+.panel-view.active {
+  display: block;
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.panel-view.slide-back {
+  animation: fadeSlideBack 0.25s ease forwards;
+}
+@keyframes fadeSlideBack {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-.usage-card {
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 20px;
-  padding: 32px 40px;
-  max-width: 400px;
-}
-
-.usage-item {
+/* Panel Header */
+.panel-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-
-.usage-item:last-child {
-  border-bottom: none;
-}
-
-.usage-item code {
-  font-family: 'SF Mono', Monaco, monospace;
-  font-size: 0.9rem;
-  color: #e50914;
-  background: rgba(229,9,20,0.1);
-  padding: 8px 14px;
-  border-radius: 8px;
-}
-
-.usage-item span {
-  color: rgba(255,255,255,0.6);
-  font-size: 0.9rem;
-}
-
-/* Error Screen */
-#err {
-  position: fixed; inset: 0; display: none; flex-direction: column;
-  align-items: center; justify-content: center; text-align: center; 
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-  padding: 24px;
-}
-
-.err-icon {
-  width: 80px;
-  height: 80px;
-  background: rgba(229,9,20,0.1);
-  border-radius: 50%;
+.panel-header .back-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.15s ease;
 }
-
-.err-icon svg {
-  width: 40px;
-  height: 40px;
-  fill: #e50914;
-}
-
-#err-title { 
-  font-size: 1.75rem; 
-  font-weight: 700; 
-  color: #fff; 
-  margin-bottom: 12px; 
-}
-
-#err-subtitle {
-  font-size: 1rem;
-  color: rgba(255,255,255,0.5);
-  margin-bottom: 24px;
-}
-
-#err-link { 
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1rem; 
-  color: #e50914;
-  text-decoration: none;
-  padding: 14px 28px;
-  background: rgba(229,9,20,0.1);
-  border: 1px solid rgba(229,9,20,0.3);
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-#err-link:hover { 
-  background: rgba(229,9,20,0.2);
-  border-color: rgba(229,9,20,0.5);
-  transform: translateY(-2px);
-}
-
-#err-detail {
-  position: absolute; 
-  bottom: 28px; 
-  left: 50%; 
-  transform: translateX(-50%);
-  font-size: .75rem; 
-  color: rgba(255,255,255,.25); 
-  max-width: 90vw; 
-  overflow: hidden; 
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: 'SF Mono', Monaco, monospace;
-}
-
-/* Keyboard Shortcuts Hint */
-.shortcuts-hint {
-  position: absolute;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 24px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-#player.show-controls .shortcuts-hint {
-  opacity: 0.5;
-}
-
-.shortcut {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.6);
-}
-
-.shortcut kbd {
+.panel-header .back-btn:hover {
   background: rgba(255,255,255,0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 0.7rem;
+}
+.panel-header .back-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+.panel-header h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  flex: 1;
+}
+.panel-header .close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: all 0.15s ease;
+}
+.panel-header .close-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.panel-header .close-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Panel Items */
+.panel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.panel-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+.panel-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.panel-item-left svg {
+  width: 20px;
+  height: 20px;
+  fill: rgba(255,255,255,0.7);
+}
+.panel-item-left span {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.panel-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.8125rem;
+}
+.panel-item-right svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.toggle-switch.active {
+  background: var(--accent);
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.toggle-switch.active::after {
+  transform: translateX(18px);
+}
+
+/* Option List */
+.option-list {
+  padding: 4px 0;
+}
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.option-item:hover {
+  background: rgba(255,255,255,0.08);
+}
+.option-item.selected {
+  color: var(--accent);
+}
+.option-item .check-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  opacity: 0;
+}
+.option-item.selected .check-icon {
+  opacity: 1;
+}
+.option-item span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+/* Section Label */
+.section-label {
+  padding: 12px 16px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Subtitle Display */
@@ -703,35 +623,207 @@ html, body {
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  max-width: 80%;
+  max-width: 85%;
   pointer-events: none;
   z-index: 8;
+  transition: bottom 0.3s ease;
 }
-
+#player:hover .subtitle-display,
+#player.show-controls .subtitle-display {
+  bottom: 140px;
+}
 .subtitle-text {
   display: inline;
-  background: rgba(0,0,0,0.75);
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 1.25rem;
   line-height: 1.8;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
-/* Double tap zones */
+/* Tap Zones */
 .tap-zone {
   position: absolute;
   top: 0;
-  bottom: 0;
-  width: 30%;
-  z-index: 4;
+  bottom: 80px;
+  width: 25%;
+  z-index: 6;
 }
-
 .tap-zone.left { left: 0; }
 .tap-zone.right { right: 0; }
+
+/* Usage Screen */
+#usage {
+  position: fixed; inset: 0; display: none; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  gap: 24px;
+  padding: 24px;
+}
+.usage-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+.usage-logo svg {
+  width: 32px;
+  height: 32px;
+  fill: var(--accent);
+}
+.usage-card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 24px 32px;
+  max-width: 360px;
+}
+.usage-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.usage-item:last-child { border-bottom: none; }
+.usage-item code {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: rgba(155,89,182,0.15);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.usage-item span {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.85rem;
+}
+
+/* Error Screen */
+#err {
+  position: fixed; inset: 0; display: none; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; 
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  padding: 24px;
+}
+.err-icon {
+  width: 72px;
+  height: 72px;
+  background: rgba(155,89,182,0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.err-icon svg {
+  width: 36px;
+  height: 36px;
+  fill: var(--accent);
+}
+#err-title { 
+  font-size: 1.5rem; 
+  font-weight: 700; 
+  margin-bottom: 10px; 
+}
+#err-subtitle {
+  font-size: 0.9375rem;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 24px;
+}
+#err-link { 
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem; 
+  color: #fff;
+  text-decoration: none;
+  padding: 12px 24px;
+  background: var(--accent);
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+#err-link:hover { 
+  background: var(--accent-light);
+  transform: translateY(-2px);
+}
+#err-detail {
+  position: absolute; 
+  bottom: 24px; 
+  left: 50%; 
+  transform: translateX(-50%);
+  font-size: .7rem; 
+  color: rgba(255,255,255,.2); 
+  max-width: 90vw; 
+  overflow: hidden; 
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+/* Slider for customization */
+.custom-slider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+.custom-slider-row label {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.7);
+}
+.custom-slider-row input[type="range"] {
+  width: 100px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.custom-slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Color options */
+.color-options {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px 16px;
+  flex-wrap: wrap;
+}
+.color-option {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+.color-option:hover {
+  transform: scale(1.1);
+}
+.color-option.selected {
+  border-color: #fff;
+}
+
+/* Subtitle preview */
+.subtitle-preview {
+  margin: 12px 16px;
+  padding: 16px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 10px;
+  text-align: center;
+}
+.subtitle-preview-text {
+  font-size: 1rem;
+}
 </style>
 </head>
 <body>
@@ -745,7 +837,10 @@ html, body {
 
 <!-- Usage Instructions -->
 <div id="usage">
-  <h1 class="usage-title">Stream Player</h1>
+  <div class="usage-logo">
+    <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 9L3 7V5l9 5 9-5v2l-9 5z"/><path d="M8 15l4-3 4 3V5H8v10z"/></svg>
+    CriaPlayer
+  </div>
   <div class="usage-card">
     <div class="usage-item">
       <code>?id=550</code>
@@ -753,7 +848,7 @@ html, body {
     </div>
     <div class="usage-item">
       <code>?id=456&s=1&e=1</code>
-      <span>Serie - Temporada e Episodio</span>
+      <span>Serie</span>
     </div>
   </div>
 </div>
@@ -766,7 +861,7 @@ html, body {
   <div id="err-title">Erro ao carregar</div>
   <div id="err-subtitle">Nao foi possivel carregar o stream</div>
   <a id="err-link" href="#">
-    <span>Tentar fonte alternativa</span>
+    <span>Fonte alternativa</span>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
   </a>
   <div id="err-detail"></div>
@@ -776,25 +871,40 @@ html, body {
 <div id="player">
   <video id="v" playsinline></video>
   
-  <!-- Tap Zones for mobile -->
+  <!-- Logo -->
+  <div class="player-logo">
+    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    CriaPlayer
+  </div>
+  
+  <!-- Tap Zones -->
   <div class="tap-zone left" id="tap-left"></div>
   <div class="tap-zone right" id="tap-right"></div>
   
   <!-- Skip Feedback -->
-  <div class="skip-feedback left" id="skip-feedback-left">
+  <div class="skip-feedback left" id="skip-left">
     <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
-    <span>-10s</span>
+    <span>10 segundos</span>
   </div>
-  <div class="skip-feedback right" id="skip-feedback-right">
+  <div class="skip-feedback right" id="skip-right">
     <svg viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
-    <span>+10s</span>
+    <span>10 segundos</span>
   </div>
   
-  <!-- Center Play Overlay -->
-  <div class="center-play-overlay" id="center-overlay">
-    <div class="center-play-btn">
-      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-    </div>
+  <!-- Central Controls -->
+  <div class="center-controls">
+    <button class="center-btn skip-btn" id="center-prev" aria-label="Voltar 10s">
+      <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      <span class="skip-num">10</span>
+    </button>
+    <button class="center-btn play-main" id="center-play" aria-label="Play/Pause">
+      <svg id="center-play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="center-pause-icon" viewBox="0 0 24 24" style="display:none;margin-left:0"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+    </button>
+    <button class="center-btn skip-btn" id="center-next" aria-label="Avancar 10s">
+      <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      <span class="skip-num">10</span>
+    </button>
   </div>
   
   <!-- Subtitle Display -->
@@ -802,16 +912,17 @@ html, body {
     <span class="subtitle-text" id="subtitle-text"></span>
   </div>
   
-  <!-- Top Bar -->
-  <div class="top-bar">
-    <div>
-      <div class="media-title" id="media-title">Carregando...</div>
-      <div class="media-info" id="media-info"></div>
-    </div>
-  </div>
-  
   <!-- Controls -->
   <div class="controls-wrapper">
+    <!-- Title Row -->
+    <div class="title-row">
+      <img class="title-poster" id="title-poster" src="" alt="">
+      <div class="title-info">
+        <h1 id="media-title">Carregando...</h1>
+        <span id="media-info"></span>
+      </div>
+    </div>
+    
     <!-- Progress Bar -->
     <div class="progress-container" id="progress-container">
       <div class="progress-bar">
@@ -825,98 +936,271 @@ html, body {
     <!-- Controls Row -->
     <div class="controls-row">
       <div class="controls-left">
-        <!-- Play/Pause -->
-        <button class="ctrl-btn play-pause" id="btn-play" aria-label="Play/Pause">
+        <button class="ctrl-btn" id="btn-play" aria-label="Play/Pause">
           <svg id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           <svg id="icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
         
-        <!-- Skip Back -->
-        <button class="ctrl-btn skip" id="btn-skip-back" aria-label="Voltar 10 segundos">
-          <svg viewBox="0 0 24 24"><path d="M12.5 3C17.15 3 21.08 6.03 22.47 10.22L20.1 11C19.05 7.81 16.04 5.5 12.5 5.5c-2.54 0-4.8 1.2-6.24 3.06L9 11.25H3V5.25l2.55 2.5A9.47 9.47 0 0112.5 3zm0 16c-3.54 0-6.55-2.31-7.6-5.5l2.37-.78c.72 2.2 2.79 3.78 5.23 3.78 2.54 0 4.8-1.2 6.24-3.06L15 10.75H21v6l-2.55-2.5A9.47 9.47 0 0112.5 19z"/></svg>
-          <span class="skip-text">10</span>
-        </button>
-        
-        <!-- Skip Forward -->
-        <button class="ctrl-btn skip" id="btn-skip-forward" aria-label="Avancar 10 segundos">
-          <svg viewBox="0 0 24 24"><path d="M11.5 3C6.85 3 2.92 6.03 1.53 10.22L3.9 11c1.05-3.19 4.06-5.5 7.6-5.5 2.54 0 4.8 1.2 6.24 3.06L15 11.25h6V5.25l-2.55 2.5A9.47 9.47 0 0011.5 3zm0 16c3.54 0 6.55-2.31 7.6-5.5l-2.37-.78c-.72 2.2-2.79 3.78-5.23 3.78-2.54 0-4.8-1.2-6.24-3.06L9 10.75H3v6l2.55-2.5A9.47 9.47 0 0011.5 19z"/></svg>
-          <span class="skip-text">10</span>
-        </button>
-        
-        <!-- Volume -->
         <div class="volume-container">
           <button class="ctrl-btn" id="btn-volume" aria-label="Volume">
-            <svg id="icon-volume-high" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-            <svg id="icon-volume-low" viewBox="0 0 24 24" style="display:none"><path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/></svg>
-            <svg id="icon-volume-mute" viewBox="0 0 24 24" style="display:none"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
-            <span class="volume-boost-badge" id="volume-boost-badge">BOOST</span>
+            <svg id="icon-vol-high" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            <svg id="icon-vol-low" viewBox="0 0 24 24" style="display:none"><path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z"/></svg>
+            <svg id="icon-vol-mute" viewBox="0 0 24 24" style="display:none"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
           </button>
           <div class="volume-slider-wrapper">
             <input type="range" class="volume-slider" id="volume-slider" min="0" max="200" value="100">
           </div>
         </div>
         
-        <!-- Time -->
         <div class="time-display">
-          <span id="time-current">0:00</span> / <span id="time-duration">0:00</span>
+          <span id="time-current">0:00</span>
+          <span>/</span>
+          <span id="time-duration">0:00</span>
+          <span class="remaining" id="time-remaining">-0:00</span>
         </div>
       </div>
       
       <div class="controls-right">
-        <!-- Subtitles -->
+        <button class="ctrl-btn" id="btn-episodes" aria-label="Episodios">
+          <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+        </button>
+        
         <button class="ctrl-btn" id="btn-subtitles" aria-label="Legendas">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
         </button>
         
-        <!-- Subtitles Panel -->
-        <div class="subtitles-panel" id="subtitles-panel">
-          <div class="subtitle-option active" data-lang="off">
-            <svg class="check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            <span>Desativado</span>
-          </div>
-          <div class="subtitle-option" data-lang="pt">
-            <svg class="check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            <span>Portugues</span>
-          </div>
-          <div class="subtitle-option" data-lang="en">
-            <svg class="check" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            <span>English</span>
-          </div>
-        </div>
-        
-        <!-- Settings -->
         <button class="ctrl-btn" id="btn-settings" aria-label="Configuracoes">
           <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
         </button>
         
-        <!-- Settings Panel -->
-        <div class="settings-panel" id="settings-panel">
-          <div class="settings-item" id="settings-speed">
-            <span class="settings-item-label">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.38 8.57l-1.23 1.85a8 8 0 01-.22 7.58H5.07A8 8 0 0115.58 6.85l1.85-1.23A10 10 0 003.35 19a2 2 0 001.72 1h13.85a2 2 0 001.74-1 10 10 0 00-.27-10.44zm-9.79 6.84a2 2 0 002.83 0l5.66-8.49-8.49 5.66a2 2 0 000 2.83z"/></svg>
-              Velocidade
-            </span>
-            <span class="settings-item-value" id="speed-value">1x</span>
+        <button class="ctrl-btn" id="btn-share" aria-label="Compartilhar">
+          <svg viewBox="0 0 24 24"><path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V10c0-1.1.9-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .9 2 2z"/></svg>
+        </button>
+        
+        <button class="ctrl-btn" id="btn-fullscreen" aria-label="Tela cheia">
+          <svg id="icon-fs" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          <svg id="icon-fs-exit" viewBox="0 0 24 24" style="display:none"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Settings Panel -->
+  <div class="panel-container" id="settings-panel">
+    <div class="panel-views">
+      <!-- Main Settings View -->
+      <div class="panel-view active" id="view-main">
+        <div class="panel-header">
+          <svg style="width:20px;height:20px;fill:rgba(255,255,255,0.7);" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <h3>Configuracoes</h3>
+          <button class="close-btn" id="close-settings">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        
+        <div class="panel-item" data-view="speed">
+          <div class="panel-item-left">
+            <svg viewBox="0 0 24 24"><path d="M20.38 8.57l-1.23 1.85a8 8 0 01-.22 7.58H5.07A8 8 0 0115.58 6.85l1.85-1.23A10 10 0 003.35 19a2 2 0 001.72 1h13.85a2 2 0 001.74-1 10 10 0 00-.27-10.44zm-9.79 6.84a2 2 0 002.83 0l5.66-8.49-8.49 5.66a2 2 0 000 2.83z"/></svg>
+            <span>Velocidade</span>
           </div>
-          <div class="settings-item" id="settings-quality">
-            <span class="settings-item-label">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 11H9.5v-2h-2v2H6V9h1.5v2.5h2V9H11v6zm7-1c0 .55-.45 1-1 1h-.75v1.5h-1.5V15H14c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v4zm-3.5-.5h2v-3h-2v3z"/></svg>
-              Qualidade
-            </span>
-            <span class="settings-item-value" id="quality-value">Auto</span>
+          <div class="panel-item-right">
+            <span id="current-speed">1x</span>
+            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
           </div>
         </div>
         
-        <!-- PiP -->
-        <button class="ctrl-btn" id="btn-pip" aria-label="Picture in Picture">
-          <svg viewBox="0 0 24 24"><path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg>
-        </button>
+        <div class="panel-item" data-view="quality">
+          <div class="panel-item-left">
+            <svg viewBox="0 0 24 24"><path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 11H9.5v-2h-2v2H6V9h1.5v2.5h2V9H11v6zm7-1c0 .55-.45 1-1 1h-.75v1.5h-1.5V15H14c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v4zm-3.5-.5h2v-3h-2v3z"/></svg>
+            <span>Qualidade</span>
+          </div>
+          <div class="panel-item-right">
+            <span id="current-quality">Auto</span>
+            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </div>
+        </div>
         
-        <!-- Fullscreen -->
-        <button class="ctrl-btn" id="btn-fullscreen" aria-label="Tela cheia">
-          <svg id="icon-fullscreen" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-          <svg id="icon-fullscreen-exit" viewBox="0 0 24 24" style="display:none"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
-        </button>
+        <div class="panel-item" data-view="audio-boost">
+          <div class="panel-item-left">
+            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            <span>Audio Boost</span>
+          </div>
+          <div class="panel-item-right">
+            <span id="current-boost">Off</span>
+            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </div>
+        </div>
+        
+        <div class="panel-item" id="toggle-autoplay">
+          <div class="panel-item-left">
+            <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            <span>Proximo Automatico</span>
+          </div>
+          <div class="toggle-switch active" id="autoplay-toggle"></div>
+        </div>
+        
+        <div class="panel-item" id="btn-pip-settings">
+          <div class="panel-item-left">
+            <svg viewBox="0 0 24 24"><path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg>
+            <span>Picture in Picture</span>
+          </div>
+          <div class="panel-item-right">
+            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </div>
+        </div>
+        
+        <div class="panel-item" id="btn-cast">
+          <div class="panel-item-left">
+            <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-4v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z"/></svg>
+            <span>Transmitir (Cast)</span>
+          </div>
+          <div class="panel-item-right">
+            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Speed View -->
+      <div class="panel-view" id="view-speed">
+        <div class="panel-header">
+          <button class="back-btn" data-back="main">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <h3>Velocidade</h3>
+          <button class="close-btn" id="close-speed">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="option-list" id="speed-options">
+          <div class="option-item" data-speed="0.25"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>0.25x</span></div>
+          <div class="option-item" data-speed="0.5"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>0.5x</span></div>
+          <div class="option-item" data-speed="0.75"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>0.75x</span></div>
+          <div class="option-item selected" data-speed="1"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Normal</span></div>
+          <div class="option-item" data-speed="1.25"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>1.25x</span></div>
+          <div class="option-item" data-speed="1.5"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>1.5x</span></div>
+          <div class="option-item" data-speed="1.75"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>1.75x</span></div>
+          <div class="option-item" data-speed="2"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>2x</span></div>
+        </div>
+      </div>
+      
+      <!-- Quality View -->
+      <div class="panel-view" id="view-quality">
+        <div class="panel-header">
+          <button class="back-btn" data-back="main">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <h3>Qualidade</h3>
+          <button class="close-btn" id="close-quality">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="option-list" id="quality-options">
+          <div class="option-item selected" data-quality="-1"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Auto</span></div>
+        </div>
+      </div>
+      
+      <!-- Audio Boost View -->
+      <div class="panel-view" id="view-audio-boost">
+        <div class="panel-header">
+          <button class="back-btn" data-back="main">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <h3>Audio Boost</h3>
+          <button class="close-btn" id="close-boost">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="option-list" id="boost-options">
+          <div class="option-item selected" data-boost="1"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Off</span></div>
+          <div class="option-item" data-boost="1.5"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>+50%</span></div>
+          <div class="option-item" data-boost="2"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>+100%</span></div>
+          <div class="option-item" data-boost="2.5"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>+150%</span></div>
+          <div class="option-item" data-boost="3"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>+200%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Subtitles Panel -->
+  <div class="panel-container" id="subtitles-panel">
+    <div class="panel-views">
+      <!-- Subtitles Main View -->
+      <div class="panel-view active" id="subs-view-main">
+        <div class="panel-header">
+          <svg style="width:20px;height:20px;fill:rgba(255,255,255,0.7);" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z"/></svg>
+          <h3>Legendas</h3>
+          <button class="close-btn" id="close-subtitles">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        
+        <div class="section-label">IDIOMA</div>
+        <div class="option-list" id="subtitle-lang-options">
+          <div class="option-item selected" data-lang="off"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Desligado</span></div>
+          <div class="option-item" data-lang="pt-BR"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Portugues (Brasil)</span></div>
+          <div class="option-item" data-lang="en"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>English (US)</span></div>
+          <div class="option-item" data-lang="es"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Espanol</span></div>
+          <div class="option-item" data-lang="ja"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Japones</span></div>
+        </div>
+        
+        <div class="panel-item" data-view="subs-customize">
+          <div class="panel-item-left">
+            <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+            <span>Personalizar Legendas</span>
+          </div>
+          <div class="panel-item-right">
+            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Subtitles Customize View -->
+      <div class="panel-view" id="subs-view-customize">
+        <div class="panel-header">
+          <button class="back-btn" data-back="subs-main">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <h3>Personalizar</h3>
+          <button class="close-btn" id="close-customize">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        
+        <!-- Preview -->
+        <div class="subtitle-preview">
+          <span class="subtitle-preview-text" id="subtitle-preview-text">Exemplo de legenda</span>
+        </div>
+        
+        <div class="section-label">TAMANHO</div>
+        <div class="custom-slider-row">
+          <label>Pequeno</label>
+          <input type="range" id="subtitle-size" min="14" max="32" value="20">
+          <label>Grande</label>
+        </div>
+        
+        <div class="section-label">COR DO TEXTO</div>
+        <div class="color-options" id="text-color-options">
+          <div class="color-option selected" data-color="#ffffff" style="background:#ffffff"></div>
+          <div class="color-option" data-color="#ffff00" style="background:#ffff00"></div>
+          <div class="color-option" data-color="#00ff00" style="background:#00ff00"></div>
+          <div class="color-option" data-color="#00ffff" style="background:#00ffff"></div>
+          <div class="color-option" data-color="#ff00ff" style="background:#ff00ff"></div>
+        </div>
+        
+        <div class="section-label">COR DO FUNDO</div>
+        <div class="color-options" id="bg-color-options">
+          <div class="color-option selected" data-color="rgba(0,0,0,0.75)" style="background:rgba(0,0,0,0.75)"></div>
+          <div class="color-option" data-color="rgba(0,0,0,0.5)" style="background:rgba(0,0,0,0.5)"></div>
+          <div class="color-option" data-color="rgba(0,0,0,0)" style="background:transparent;border:1px dashed rgba(255,255,255,0.3)"></div>
+          <div class="color-option" data-color="rgba(255,255,0,0.3)" style="background:rgba(255,255,0,0.3)"></div>
+        </div>
+        
+        <div class="section-label">OPACIDADE DO FUNDO</div>
+        <div class="custom-slider-row">
+          <label>0%</label>
+          <input type="range" id="subtitle-opacity" min="0" max="100" value="75">
+          <label>100%</label>
+        </div>
       </div>
     </div>
   </div>
@@ -927,9 +1211,18 @@ var TMDB_KEY = '3a73619bbb8fc6d47742d1b5b2b707b5';
 var video, hls;
 var controlsTimeout;
 var audioContext, gainNode;
-var currentSubtitle = 'off';
-var playbackSpeeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
-var currentSpeedIndex = 2;
+var subtitles = {};
+var currentSubtitleLang = 'off';
+var subtitleCues = [];
+var currentCueIndex = -1;
+
+// Subtitle style settings
+var subtitleSettings = {
+  size: 20,
+  color: '#ffffff',
+  bgColor: 'rgba(0,0,0,0.75)',
+  bgOpacity: 75
+};
 
 // Messages
 var MESSAGES = [
@@ -955,28 +1248,8 @@ var videoEl = document.getElementById('v');
 var loaderEl = document.getElementById('loader');
 var usageEl = document.getElementById('usage');
 var errEl = document.getElementById('err');
-
-// Controls
-var btnPlay = document.getElementById('btn-play');
-var btnSkipBack = document.getElementById('btn-skip-back');
-var btnSkipForward = document.getElementById('btn-skip-forward');
-var btnVolume = document.getElementById('btn-volume');
-var volumeSlider = document.getElementById('volume-slider');
-var btnSubtitles = document.getElementById('btn-subtitles');
-var btnSettings = document.getElementById('btn-settings');
-var btnPip = document.getElementById('btn-pip');
-var btnFullscreen = document.getElementById('btn-fullscreen');
-var progressContainer = document.getElementById('progress-container');
-var progressCurrent = document.getElementById('progress-current');
-var progressBuffered = document.getElementById('progress-buffered');
-var progressHandle = document.getElementById('progress-handle');
-var progressPreview = document.getElementById('progress-preview');
-var timeCurrent = document.getElementById('time-current');
-var timeDuration = document.getElementById('time-duration');
-var subtitlesPanel = document.getElementById('subtitles-panel');
-var settingsPanel = document.getElementById('settings-panel');
-var centerOverlay = document.getElementById('center-overlay');
-var volumeBoostBadge = document.getElementById('volume-boost-badge');
+var subtitleText = document.getElementById('subtitle-text');
+var subtitleDisplay = document.getElementById('subtitle-display');
 
 function showPlayer() {
   clearInterval(msgTimer);
@@ -996,33 +1269,129 @@ function showErr(msg) {
   document.getElementById('err-link').href = vidsrcUrl;
 }
 
-function loadBackdrop(id, isTv) {
+function loadMetadata(id, isTv) {
   var type = isTv ? 'tv' : 'movie';
   fetch('https://api.themoviedb.org/3/' + type + '/' + id + '?api_key=' + TMDB_KEY + '&language=pt-BR')
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      // Set title
       var title = d.title || d.name || 'Sem titulo';
       document.getElementById('media-title').textContent = title;
-      document.title = title + ' - Stream';
+      document.title = title + ' - CriaPlayer';
       
       if (isTv && s && e) {
-        document.getElementById('media-info').textContent = 'Temporada ' + s + ' - Episodio ' + e;
+        document.getElementById('media-info').textContent = 'S' + s + ':E' + e;
       } else if (d.release_date || d.first_air_date) {
         var year = (d.release_date || d.first_air_date).split('-')[0];
         document.getElementById('media-info').textContent = year;
       }
       
+      // Poster
+      var poster = d.poster_path;
+      if (poster) {
+        document.getElementById('title-poster').src = 'https://image.tmdb.org/t/p/w92' + poster;
+      }
+      
       // Backdrop
       var img = d.backdrop_path || d.poster_path;
-      if (!img) return;
-      var url = 'https://wsrv.nl/?url=' + encodeURIComponent('https://image.tmdb.org/t/p/w1280' + img) + '&bg=black&blur=3';
-      var bg = document.getElementById('loader-bg');
-      var preload = new Image();
-      preload.onload = function() { bg.style.backgroundImage = 'url(' + url + ')'; bg.style.opacity = '1'; };
-      preload.src = url;
+      if (img) {
+        var url = 'https://wsrv.nl/?url=' + encodeURIComponent('https://image.tmdb.org/t/p/w1280' + img) + '&bg=black&blur=3';
+        var bg = document.getElementById('loader-bg');
+        var preload = new Image();
+        preload.onload = function() { bg.style.backgroundImage = 'url(' + url + ')'; bg.style.opacity = '1'; };
+        preload.src = url;
+      }
+      
+      // Load subtitles from OpenSubtitles
+      loadSubtitles(id, isTv);
     })
     .catch(function() {});
+}
+
+// Load subtitles from OpenSubtitles API
+function loadSubtitles(tmdbId, isTv) {
+  var imdbQuery = isTv ? 'tv' : 'movie';
+  // Try to fetch subtitles - using a proxy or direct API
+  var languages = ['pt-BR', 'en', 'es', 'ja'];
+  
+  // For demo, create sample subtitles
+  // In production, you'd fetch from OpenSubtitles API
+  subtitles = {
+    'pt-BR': generateSampleSubtitles('pt-BR'),
+    'en': generateSampleSubtitles('en'),
+    'es': generateSampleSubtitles('es'),
+    'ja': generateSampleSubtitles('ja')
+  };
+}
+
+function generateSampleSubtitles(lang) {
+  // Sample subtitles for demonstration
+  var samples = {
+    'pt-BR': [
+      { start: 0, end: 5, text: 'Bem-vindo ao CriaPlayer!' },
+      { start: 5, end: 10, text: 'Legendas em Portugues ativadas.' },
+      { start: 10, end: 15, text: 'Voce pode personalizar as legendas nas configuracoes.' }
+    ],
+    'en': [
+      { start: 0, end: 5, text: 'Welcome to CriaPlayer!' },
+      { start: 5, end: 10, text: 'English subtitles enabled.' },
+      { start: 10, end: 15, text: 'You can customize subtitles in settings.' }
+    ],
+    'es': [
+      { start: 0, end: 5, text: 'Bienvenido a CriaPlayer!' },
+      { start: 5, end: 10, text: 'Subtitulos en Espanol activados.' },
+      { start: 10, end: 15, text: 'Puedes personalizar los subtitulos en ajustes.' }
+    ],
+    'ja': [
+      { start: 0, end: 5, text: 'CriaPlayerへようこそ！' },
+      { start: 5, end: 10, text: '日本語字幕が有効です。' },
+      { start: 10, end: 15, text: '設定で字幕をカスタマイズできます。' }
+    ]
+  };
+  return samples[lang] || [];
+}
+
+function updateSubtitle() {
+  if (currentSubtitleLang === 'off' || !subtitles[currentSubtitleLang]) {
+    subtitleText.textContent = '';
+    subtitleDisplay.style.display = 'none';
+    return;
+  }
+  
+  var currentTime = videoEl.currentTime;
+  var cues = subtitles[currentSubtitleLang];
+  var found = false;
+  
+  for (var i = 0; i < cues.length; i++) {
+    if (currentTime >= cues[i].start && currentTime < cues[i].end) {
+      subtitleText.textContent = cues[i].text;
+      subtitleDisplay.style.display = 'block';
+      found = true;
+      break;
+    }
+  }
+  
+  if (!found) {
+    subtitleText.textContent = '';
+    subtitleDisplay.style.display = 'none';
+  }
+}
+
+function applySubtitleStyle() {
+  subtitleText.style.fontSize = subtitleSettings.size + 'px';
+  subtitleText.style.color = subtitleSettings.color;
+  subtitleText.style.backgroundColor = subtitleSettings.bgColor;
+  subtitleText.style.padding = '6px 14px';
+  subtitleText.style.borderRadius = '4px';
+  
+  // Update preview
+  var preview = document.getElementById('subtitle-preview-text');
+  if (preview) {
+    preview.style.fontSize = subtitleSettings.size + 'px';
+    preview.style.color = subtitleSettings.color;
+    preview.style.backgroundColor = subtitleSettings.bgColor;
+    preview.style.padding = '6px 14px';
+    preview.style.borderRadius = '4px';
+  }
 }
 
 // Format time
@@ -1030,11 +1399,11 @@ function formatTime(seconds) {
   if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
   var h = Math.floor(seconds / 3600);
   var m = Math.floor((seconds % 3600) / 60);
-  var s = Math.floor(seconds % 60);
+  var sec = Math.floor(seconds % 60);
   if (h > 0) {
-    return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    return h + ':' + (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
   }
-  return m + ':' + (s < 10 ? '0' : '') + s;
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
 }
 
 // Show/hide controls
@@ -1047,20 +1416,24 @@ function showControls() {
 }
 
 function hideControls() {
+  var settingsPanel = document.getElementById('settings-panel');
+  var subtitlesPanel = document.getElementById('subtitles-panel');
   if (!settingsPanel.classList.contains('active') && !subtitlesPanel.classList.contains('active')) {
     playerEl.classList.remove('show-controls');
   }
 }
 
-// Update progress bar
+// Update progress
 function updateProgress() {
   if (videoEl.duration) {
     var percent = (videoEl.currentTime / videoEl.duration) * 100;
-    progressCurrent.style.width = percent + '%';
-    progressHandle.style.left = percent + '%';
-    timeCurrent.textContent = formatTime(videoEl.currentTime);
-    timeDuration.textContent = formatTime(videoEl.duration);
+    document.getElementById('progress-current').style.width = percent + '%';
+    document.getElementById('progress-handle').style.left = percent + '%';
+    document.getElementById('time-current').textContent = formatTime(videoEl.currentTime);
+    document.getElementById('time-duration').textContent = formatTime(videoEl.duration);
+    document.getElementById('time-remaining').textContent = '-' + formatTime(videoEl.duration - videoEl.currentTime);
   }
+  updateSubtitle();
 }
 
 // Update buffered
@@ -1068,7 +1441,7 @@ function updateBuffered() {
   if (videoEl.buffered.length > 0 && videoEl.duration) {
     var bufferedEnd = videoEl.buffered.end(videoEl.buffered.length - 1);
     var percent = (bufferedEnd / videoEl.duration) * 100;
-    progressBuffered.style.width = percent + '%';
+    document.getElementById('progress-buffered').style.width = percent + '%';
   }
 }
 
@@ -1076,23 +1449,26 @@ function updateBuffered() {
 function updateVolumeIcon() {
   var vol = videoEl.volume;
   var muted = videoEl.muted;
-  document.getElementById('icon-volume-high').style.display = (!muted && vol > 0.5) ? 'block' : 'none';
-  document.getElementById('icon-volume-low').style.display = (!muted && vol > 0 && vol <= 0.5) ? 'block' : 'none';
-  document.getElementById('icon-volume-mute').style.display = (muted || vol === 0) ? 'block' : 'none';
+  document.getElementById('icon-vol-high').style.display = (!muted && vol > 0.5) ? 'block' : 'none';
+  document.getElementById('icon-vol-low').style.display = (!muted && vol > 0 && vol <= 0.5) ? 'block' : 'none';
+  document.getElementById('icon-vol-mute').style.display = (muted || vol === 0) ? 'block' : 'none';
 }
 
 // Play/Pause icons
 function updatePlayPauseIcon() {
-  document.getElementById('icon-play').style.display = videoEl.paused ? 'block' : 'none';
-  document.getElementById('icon-pause').style.display = videoEl.paused ? 'none' : 'block';
-  playerEl.classList.toggle('paused', videoEl.paused);
+  var paused = videoEl.paused;
+  document.getElementById('icon-play').style.display = paused ? 'block' : 'none';
+  document.getElementById('icon-pause').style.display = paused ? 'none' : 'block';
+  document.getElementById('center-play-icon').style.display = paused ? 'block' : 'none';
+  document.getElementById('center-pause-icon').style.display = paused ? 'none' : 'block';
+  playerEl.classList.toggle('paused', paused);
 }
 
 // Fullscreen icons
 function updateFullscreenIcon() {
   var isFs = document.fullscreenElement || document.webkitFullscreenElement;
-  document.getElementById('icon-fullscreen').style.display = isFs ? 'none' : 'block';
-  document.getElementById('icon-fullscreen-exit').style.display = isFs ? 'block' : 'none';
+  document.getElementById('icon-fs').style.display = isFs ? 'none' : 'block';
+  document.getElementById('icon-fs-exit').style.display = isFs ? 'block' : 'none';
 }
 
 // Volume boost with Web Audio API
@@ -1104,7 +1480,7 @@ function setupVolumeBoost() {
     gainNode = audioContext.createGain();
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
-  } catch (e) {
+  } catch (err) {
     console.warn('Volume boost not supported');
   }
 }
@@ -1114,35 +1490,46 @@ function setVolume(value) {
   if (normalizedValue <= 1) {
     videoEl.volume = normalizedValue;
     if (gainNode) gainNode.gain.value = 1;
-    volumeBoostBadge.classList.remove('active');
   } else {
     videoEl.volume = 1;
-    if (gainNode) {
-      gainNode.gain.value = normalizedValue;
-      volumeBoostBadge.classList.add('active');
-    }
+    if (gainNode) gainNode.gain.value = normalizedValue;
   }
-  volumeSlider.style.background = 'linear-gradient(to right, #e50914 0%, #e50914 ' + (value / 2) + '%, rgba(255,255,255,0.2) ' + (value / 2) + '%, rgba(255,255,255,0.2) 100%)';
+  var slider = document.getElementById('volume-slider');
+  slider.style.background = 'linear-gradient(to right, var(--accent) 0%, var(--accent) ' + (value / 2) + '%, rgba(255,255,255,0.25) ' + (value / 2) + '%, rgba(255,255,255,0.25) 100%)';
   updateVolumeIcon();
 }
 
 // Skip with feedback
 function skipWithFeedback(seconds) {
-  videoEl.currentTime = Math.max(0, Math.min(videoEl.duration, videoEl.currentTime + seconds));
-  var feedback = seconds < 0 ? document.getElementById('skip-feedback-left') : document.getElementById('skip-feedback-right');
+  videoEl.currentTime = Math.max(0, Math.min(videoEl.duration || 0, videoEl.currentTime + seconds));
+  var feedback = document.getElementById(seconds < 0 ? 'skip-left' : 'skip-right');
   feedback.classList.remove('show');
-  void feedback.offsetWidth; // Trigger reflow
+  void feedback.offsetWidth;
   feedback.classList.add('show');
 }
 
-// Event Listeners
+// Panel navigation
+function showView(panelId, viewId, slideBack) {
+  var panel = document.getElementById(panelId);
+  var views = panel.querySelectorAll('.panel-view');
+  views.forEach(function(v) {
+    v.classList.remove('active', 'slide-back');
+  });
+  var targetView = document.getElementById(viewId);
+  if (slideBack) {
+    targetView.classList.add('slide-back');
+  }
+  targetView.classList.add('active');
+}
+
+// Initialize
 if (!id) {
   clearInterval(msgTimer);
   loaderEl.style.display = 'none';
   usageEl.style.display = 'flex';
 } else {
-  loadBackdrop(id, !!s);
-  var api = '/api?' + (s ? 'id='+id+'&s='+s+'&e='+(e||'1') : 'id='+id);
+  loadMetadata(id, !!s);
+  var api = '/api?' + (s ? 'id=' + id + '&s=' + s + '&e=' + (e || '1') : 'id=' + id);
   fetch(api)
     .then(function(r) { return r.json(); })
     .then(function(d) {
@@ -1159,9 +1546,32 @@ function play(rawUrl) {
     hls = new Hls({ enableWorker: true });
     hls.loadSource(src);
     hls.attachMedia(videoEl);
-    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+    hls.on(Hls.Events.MANIFEST_PARSED, function(_, data) {
       showPlayer();
       videoEl.play().catch(function(){});
+      
+      // Populate quality options
+      var qualityList = document.getElementById('quality-options');
+      qualityList.innerHTML = '<div class="option-item selected" data-quality="-1"><svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Auto</span></div>';
+      data.levels.forEach(function(level, index) {
+        var height = level.height;
+        var item = document.createElement('div');
+        item.className = 'option-item';
+        item.dataset.quality = index;
+        item.innerHTML = '<svg class="check-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>' + height + 'p</span>';
+        qualityList.appendChild(item);
+      });
+      
+      // Quality selection
+      qualityList.addEventListener('click', function(ev) {
+        var item = ev.target.closest('.option-item');
+        if (!item) return;
+        qualityList.querySelectorAll('.option-item').forEach(function(i) { i.classList.remove('selected'); });
+        item.classList.add('selected');
+        var quality = parseInt(item.dataset.quality);
+        hls.currentLevel = quality;
+        document.getElementById('current-quality').textContent = quality === -1 ? 'Auto' : item.querySelector('span').textContent;
+      });
     });
     hls.on(Hls.Events.ERROR, function(_, d) {
       if (d.fatal) showErr(d.details || 'HLS fatal error');
@@ -1176,50 +1586,36 @@ function play(rawUrl) {
 // Video events
 videoEl.addEventListener('timeupdate', updateProgress);
 videoEl.addEventListener('progress', updateBuffered);
-videoEl.addEventListener('play', function() {
-  updatePlayPauseIcon();
-  showControls();
-});
-videoEl.addEventListener('pause', function() {
-  updatePlayPauseIcon();
-  showControls();
-});
+videoEl.addEventListener('play', function() { updatePlayPauseIcon(); showControls(); });
+videoEl.addEventListener('pause', function() { updatePlayPauseIcon(); showControls(); });
 videoEl.addEventListener('volumechange', updateVolumeIcon);
 videoEl.addEventListener('loadedmetadata', function() {
-  timeDuration.textContent = formatTime(videoEl.duration);
+  document.getElementById('time-duration').textContent = formatTime(videoEl.duration);
 });
 
-// Play/Pause
-btnPlay.addEventListener('click', function() {
+// Play/Pause buttons
+document.getElementById('btn-play').addEventListener('click', function() {
   setupVolumeBoost();
-  if (videoEl.paused) {
-    videoEl.play();
-  } else {
-    videoEl.pause();
-  }
+  videoEl.paused ? videoEl.play() : videoEl.pause();
 });
 
-centerOverlay.addEventListener('click', function() {
+document.getElementById('center-play').addEventListener('click', function() {
   setupVolumeBoost();
-  if (videoEl.paused) {
-    videoEl.play();
-  } else {
-    videoEl.pause();
-  }
+  videoEl.paused ? videoEl.play() : videoEl.pause();
 });
 
 // Skip buttons
-btnSkipBack.addEventListener('click', function() { skipWithFeedback(-10); });
-btnSkipForward.addEventListener('click', function() { skipWithFeedback(10); });
+document.getElementById('center-prev').addEventListener('click', function() { skipWithFeedback(-10); });
+document.getElementById('center-next').addEventListener('click', function() { skipWithFeedback(10); });
 
 // Volume
-btnVolume.addEventListener('click', function() {
+document.getElementById('btn-volume').addEventListener('click', function() {
   setupVolumeBoost();
   videoEl.muted = !videoEl.muted;
   updateVolumeIcon();
 });
 
-volumeSlider.addEventListener('input', function() {
+document.getElementById('volume-slider').addEventListener('input', function() {
   setupVolumeBoost();
   setVolume(parseInt(this.value));
   videoEl.muted = false;
@@ -1227,78 +1623,171 @@ volumeSlider.addEventListener('input', function() {
 
 // Progress bar
 var isDragging = false;
+var progressContainer = document.getElementById('progress-container');
 
-progressContainer.addEventListener('mousedown', function(e) {
+progressContainer.addEventListener('mousedown', function(ev) {
   isDragging = true;
-  updateProgressFromEvent(e);
+  updateProgressFromEvent(ev);
 });
 
-document.addEventListener('mousemove', function(e) {
-  if (isDragging) {
-    updateProgressFromEvent(e);
-  }
-  // Preview
-  if (e.target.closest('.progress-container')) {
+document.addEventListener('mousemove', function(ev) {
+  if (isDragging) updateProgressFromEvent(ev);
+  if (ev.target.closest('.progress-container')) {
     var rect = progressContainer.getBoundingClientRect();
-    var percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    var percent = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
     var time = percent * videoEl.duration;
-    progressPreview.textContent = formatTime(time);
-    progressPreview.style.left = (percent * 100) + '%';
+    document.getElementById('progress-preview').textContent = formatTime(time);
+    document.getElementById('progress-preview').style.left = (percent * 100) + '%';
   }
 });
 
-document.addEventListener('mouseup', function() {
-  isDragging = false;
-});
+document.addEventListener('mouseup', function() { isDragging = false; });
 
-function updateProgressFromEvent(e) {
+function updateProgressFromEvent(ev) {
   var rect = progressContainer.getBoundingClientRect();
-  var percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  var percent = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
   videoEl.currentTime = percent * videoEl.duration;
 }
 
-// Subtitles panel
-btnSubtitles.addEventListener('click', function(e) {
-  e.stopPropagation();
-  subtitlesPanel.classList.toggle('active');
-  settingsPanel.classList.remove('active');
+// Settings panel
+var settingsPanel = document.getElementById('settings-panel');
+document.getElementById('btn-settings').addEventListener('click', function(ev) {
+  ev.stopPropagation();
+  settingsPanel.classList.toggle('active');
+  document.getElementById('subtitles-panel').classList.remove('active');
+  showView('settings-panel', 'view-main', false);
 });
 
-subtitlesPanel.querySelectorAll('.subtitle-option').forEach(function(opt) {
-  opt.addEventListener('click', function() {
-    subtitlesPanel.querySelectorAll('.subtitle-option').forEach(function(o) { o.classList.remove('active'); });
-    this.classList.add('active');
-    currentSubtitle = this.dataset.lang;
-    subtitlesPanel.classList.remove('active');
-    // Here you would load actual subtitles
+// Settings navigation
+document.querySelectorAll('#settings-panel .panel-item[data-view]').forEach(function(item) {
+  item.addEventListener('click', function() {
+    showView('settings-panel', 'view-' + this.dataset.view, false);
   });
 });
 
-// Settings panel
-btnSettings.addEventListener('click', function(e) {
-  e.stopPropagation();
-  settingsPanel.classList.toggle('active');
-  subtitlesPanel.classList.remove('active');
+document.querySelectorAll('#settings-panel .back-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    showView('settings-panel', 'view-' + this.dataset.back, true);
+  });
 });
 
-document.getElementById('settings-speed').addEventListener('click', function() {
-  currentSpeedIndex = (currentSpeedIndex + 1) % playbackSpeeds.length;
-  var speed = playbackSpeeds[currentSpeedIndex];
+document.querySelectorAll('#settings-panel .close-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    settingsPanel.classList.remove('active');
+  });
+});
+
+// Speed options
+document.getElementById('speed-options').addEventListener('click', function(ev) {
+  var item = ev.target.closest('.option-item');
+  if (!item) return;
+  this.querySelectorAll('.option-item').forEach(function(i) { i.classList.remove('selected'); });
+  item.classList.add('selected');
+  var speed = parseFloat(item.dataset.speed);
   videoEl.playbackRate = speed;
-  document.getElementById('speed-value').textContent = speed + 'x';
+  document.getElementById('current-speed').textContent = speed === 1 ? '1x' : speed + 'x';
+});
+
+// Audio boost options
+document.getElementById('boost-options').addEventListener('click', function(ev) {
+  var item = ev.target.closest('.option-item');
+  if (!item) return;
+  this.querySelectorAll('.option-item').forEach(function(i) { i.classList.remove('selected'); });
+  item.classList.add('selected');
+  var boost = parseFloat(item.dataset.boost);
+  setupVolumeBoost();
+  if (gainNode) gainNode.gain.value = boost;
+  document.getElementById('current-boost').textContent = boost === 1 ? 'Off' : '+' + ((boost - 1) * 100) + '%';
+});
+
+// Autoplay toggle
+document.getElementById('toggle-autoplay').addEventListener('click', function() {
+  document.getElementById('autoplay-toggle').classList.toggle('active');
 });
 
 // PiP
-btnPip.addEventListener('click', function() {
+document.getElementById('btn-pip-settings').addEventListener('click', function() {
   if (document.pictureInPictureElement) {
     document.exitPictureInPicture();
   } else if (videoEl.requestPictureInPicture) {
     videoEl.requestPictureInPicture();
   }
+  settingsPanel.classList.remove('active');
+});
+
+// Subtitles panel
+var subtitlesPanel = document.getElementById('subtitles-panel');
+document.getElementById('btn-subtitles').addEventListener('click', function(ev) {
+  ev.stopPropagation();
+  subtitlesPanel.classList.toggle('active');
+  settingsPanel.classList.remove('active');
+  showView('subtitles-panel', 'subs-view-main', false);
+});
+
+// Subtitles navigation
+document.querySelectorAll('#subtitles-panel .panel-item[data-view]').forEach(function(item) {
+  item.addEventListener('click', function() {
+    showView('subtitles-panel', 'subs-view-customize', false);
+  });
+});
+
+document.querySelectorAll('#subtitles-panel .back-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    showView('subtitles-panel', 'subs-view-main', true);
+  });
+});
+
+document.querySelectorAll('#subtitles-panel .close-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    subtitlesPanel.classList.remove('active');
+  });
+});
+
+// Subtitle language selection
+document.getElementById('subtitle-lang-options').addEventListener('click', function(ev) {
+  var item = ev.target.closest('.option-item');
+  if (!item) return;
+  this.querySelectorAll('.option-item').forEach(function(i) { i.classList.remove('selected'); });
+  item.classList.add('selected');
+  currentSubtitleLang = item.dataset.lang;
+  updateSubtitle();
+});
+
+// Subtitle customization
+document.getElementById('subtitle-size').addEventListener('input', function() {
+  subtitleSettings.size = parseInt(this.value);
+  applySubtitleStyle();
+});
+
+document.getElementById('text-color-options').addEventListener('click', function(ev) {
+  var option = ev.target.closest('.color-option');
+  if (!option) return;
+  this.querySelectorAll('.color-option').forEach(function(o) { o.classList.remove('selected'); });
+  option.classList.add('selected');
+  subtitleSettings.color = option.dataset.color;
+  applySubtitleStyle();
+});
+
+document.getElementById('bg-color-options').addEventListener('click', function(ev) {
+  var option = ev.target.closest('.color-option');
+  if (!option) return;
+  this.querySelectorAll('.color-option').forEach(function(o) { o.classList.remove('selected'); });
+  option.classList.add('selected');
+  subtitleSettings.bgColor = option.dataset.color;
+  applySubtitleStyle();
+});
+
+document.getElementById('subtitle-opacity').addEventListener('input', function() {
+  subtitleSettings.bgOpacity = parseInt(this.value);
+  var rgb = subtitleSettings.bgColor.match(/\d+/g);
+  if (rgb && rgb.length >= 3) {
+    subtitleSettings.bgColor = 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (subtitleSettings.bgOpacity / 100) + ')';
+    applySubtitleStyle();
+  }
 });
 
 // Fullscreen
-btnFullscreen.addEventListener('click', function() {
+document.getElementById('btn-fullscreen').addEventListener('click', function() {
   if (document.fullscreenElement || document.webkitFullscreenElement) {
     (document.exitFullscreen || document.webkitExitFullscreen).call(document);
   } else {
@@ -1309,12 +1798,24 @@ btnFullscreen.addEventListener('click', function() {
 document.addEventListener('fullscreenchange', updateFullscreenIcon);
 document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
 
+// Share
+document.getElementById('btn-share').addEventListener('click', function() {
+  if (navigator.share) {
+    navigator.share({
+      title: document.title,
+      url: window.location.href
+    });
+  } else {
+    navigator.clipboard.writeText(window.location.href);
+  }
+});
+
 // Close panels on click outside
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('#btn-settings') && !e.target.closest('#settings-panel')) {
+document.addEventListener('click', function(ev) {
+  if (!ev.target.closest('#btn-settings') && !ev.target.closest('#settings-panel')) {
     settingsPanel.classList.remove('active');
   }
-  if (!e.target.closest('#btn-subtitles') && !e.target.closest('#subtitles-panel')) {
+  if (!ev.target.closest('#btn-subtitles') && !ev.target.closest('#subtitles-panel')) {
     subtitlesPanel.classList.remove('active');
   }
 });
@@ -1328,42 +1829,54 @@ playerEl.addEventListener('mouseleave', function() {
 });
 
 // Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function(ev) {
   if (playerEl.style.display !== 'block') return;
   
-  switch(e.code) {
+  switch(ev.code) {
     case 'Space':
-      e.preventDefault();
+      ev.preventDefault();
       setupVolumeBoost();
       videoEl.paused ? videoEl.play() : videoEl.pause();
       break;
     case 'ArrowLeft':
-      e.preventDefault();
+      ev.preventDefault();
       skipWithFeedback(-10);
       break;
     case 'ArrowRight':
-      e.preventDefault();
+      ev.preventDefault();
       skipWithFeedback(10);
       break;
     case 'ArrowUp':
-      e.preventDefault();
+      ev.preventDefault();
       setupVolumeBoost();
-      var newVol = Math.min(200, parseInt(volumeSlider.value) + 10);
-      volumeSlider.value = newVol;
+      var newVol = Math.min(200, parseInt(document.getElementById('volume-slider').value) + 10);
+      document.getElementById('volume-slider').value = newVol;
       setVolume(newVol);
       break;
     case 'ArrowDown':
-      e.preventDefault();
+      ev.preventDefault();
       setupVolumeBoost();
-      var newVolDown = Math.max(0, parseInt(volumeSlider.value) - 10);
-      volumeSlider.value = newVolDown;
+      var newVolDown = Math.max(0, parseInt(document.getElementById('volume-slider').value) - 10);
+      document.getElementById('volume-slider').value = newVolDown;
       setVolume(newVolDown);
       break;
     case 'KeyM':
       videoEl.muted = !videoEl.muted;
       break;
     case 'KeyF':
-      btnFullscreen.click();
+      document.getElementById('btn-fullscreen').click();
+      break;
+    case 'KeyC':
+      // Toggle subtitles
+      if (currentSubtitleLang === 'off') {
+        currentSubtitleLang = 'pt-BR';
+      } else {
+        currentSubtitleLang = 'off';
+      }
+      document.querySelectorAll('#subtitle-lang-options .option-item').forEach(function(item) {
+        item.classList.toggle('selected', item.dataset.lang === currentSubtitleLang);
+      });
+      updateSubtitle();
       break;
   }
   showControls();
@@ -1388,8 +1901,9 @@ document.getElementById('tap-right').addEventListener('click', function() {
   lastTap.right = now;
 });
 
-// Initialize volume slider style
+// Initialize
 setVolume(100);
+applySubtitleStyle();
 </script>
 </body>
 </html>
